@@ -74,10 +74,11 @@ def register_callbacks(app, df):
          Input("job-dropdown", "value"),
          Input("dept-dropdown", "value"),
          Input("exp-slider", "value"),
-         Input("specialist-filter", "value")]  # **New Input for Checkbox Filter**
+         Input("specialist-filter", "value"),
+         Input("color-by-dropdown", "value")]
 
     )
-    def update_graph(selected_tab, selected_job, selected_dept, exp_range, selected_specialists):
+    def update_graph(selected_tab, selected_job, selected_dept, exp_range, selected_specialists, color_by):
         dff = df.copy()
 
         # Replace NaN values
@@ -132,14 +133,14 @@ def register_callbacks(app, df):
             fig = px.scatter(dff, x="ExperienceYears", y="Månadslön totalt",
                             title="Salary vs Experience 2",
                             labels={"ExperienceYears": "Years of Experience", "Månadslön totalt": "Total Monthly Salary"},
-                            color="Job Title",
+                            color=color_by,
                             hover_data=["Department"],
                             size=dff["size"])
 
             # **Apply per-point opacity manually**
             for trace in fig.data:
-                job_title = trace.name  # Get the job title associated with this trace
-                trace_opacity = dff[dff["Job Title"] == job_title]["opacity"].tolist()  # Get correct opacities
+                category_value = trace.name  # Get the job title associated with this trace
+                trace_opacity = dff[dff[color_by] == category_value]["opacity"].tolist()  # Get correct opacities
                 trace.marker.opacity = trace_opacity  # Assign correct per-point opacity
 
             

@@ -7,13 +7,26 @@ layout = dbc.Container(fluid=True, style={"height": "100vh"}, children=[
     # Filters (Always Visible)
     dbc.Row([
         dbc.Col([
+            html.Label("Color By:"),
+            dcc.Dropdown(
+                id="color-by-dropdown",
+                options=[
+                    {"label": "Job Title", "value": "Job Title"},
+                    {"label": "Specialist Type", "value": "Specialist eller ST-fysiker"},
+                    {"label": "Department", "value": "Department"}
+                ],
+                value="Job Title",  # Default color by Job Title
+                clearable=False
+            )
+        ], width=2),
+        dbc.Col([
             html.Label("Job Title:"),
             dcc.Dropdown(id="job-dropdown", clearable=True, placeholder="Select job title")
-        ], width=3),
+        ], width=2),
         dbc.Col([
             html.Label("Department:"),
             dcc.Dropdown(id="dept-dropdown", clearable=True, placeholder="Select department")
-        ], width=3),
+        ], width=2),
         dbc.Col([
             dcc.Checklist(
                 id="specialist-filter",
