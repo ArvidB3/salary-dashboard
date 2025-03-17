@@ -1,10 +1,12 @@
-from dash import Input, Output, State, dcc
+import html
+from dash import Input, Output, State, dcc, html
 import plotly.express as px
 
 def register_callbacks(app, df):
     @app.callback(
         Output("job-dropdown", "options"),
         Output("dept-dropdown", "options"),
+        Output("specialist-filter", "options"),
         Input("job-dropdown", "value"),
         Input("dept-dropdown", "value"),
         Input("exp-slider", "value")
@@ -51,8 +53,16 @@ def register_callbacks(app, df):
         # Create dropdown options with counts (show 0 if no results)
         job_options = [{"label": f"{job} ({filtered_job_counts.get(job, 0)})", "value": job} for job in all_jobs]
         dept_options = [{"label": f"{dept} ({filtered_dept_counts.get(dept, 0)})", "value": dept} for dept in all_depts]
+        specialist_counts = filtered_dff["Specialist eller ST-fysiker"].value_counts().to_dict()
+        all_specialists = ["Specialist", "ST-fysiker", "Nej"]
+        specialist_options = [
+            {"label": html.Span(f"{spec} ({specialist_counts.get(spec, 0)})", style={"margin-left": "4px"}), "value": spec}
+            for spec in all_specialists
+        ]
 
-        return job_options, dept_options
+        return job_options, dept_options, specialist_options
+
+
 
 
 
@@ -62,9 +72,11 @@ def register_callbacks(app, df):
         [Input("tabs", "value"),
          Input("job-dropdown", "value"),
          Input("dept-dropdown", "value"),
-         Input("exp-slider", "value")]
+         Input("exp-slider", "value"),
+         Input("specialist-filter", "value")]  # **New Input for Checkbox Filter**
+
     )
-    def update_graph(selected_tab, selected_job, selected_dept, exp_range):
+    def update_graph(selected_tab, selected_job, selected_dept, exp_range, selected_specialists):
         dff = df.copy()
 
         # Replace NaN values
@@ -80,6 +92,11 @@ def register_callbacks(app, df):
         if exp_range:
             filtered_dff = filtered_dff[(filtered_dff["ExperienceYears"] >= exp_range[0]) & (filtered_dff["ExperienceYears"] <= exp_range[1])]
 
+
+        # **Filter by Specialist Type**
+        dff["Specialist eller ST-fysiker"] = dff["Specialist eller ST-fysiker"].fillna("Not Specified")
+        if selected_specialists:
+            filtered_dff = filtered_dff[filtered_dff["Specialist eller ST-fysiker"].isin(selected_specialists)]
 
         # Generate the correct graph based on the selected tab
         if selected_tab == "histogram":
@@ -99,23 +116,21 @@ def register_callbacks(app, df):
             # Default: All dots are faded and small
             dff["opacity"] = 0.2
             dff["size"] = 10
-            print(f"Total points before filtering: {len(dff)}")
             
-            if not filtered_dff.empty:
-                print(f"Filtered points: {len(filtered_dff)}")  # Debug check
+            # if not filtered_dff.empty:
                 
-                # Create a unique identifier for each row to properly match
-                dff['row_id'] = dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
-                filtered_dff['row_id'] = filtered_dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
-                
-                # Use this identifier to highlight the matching rows
-                dff.loc[dff['row_id'].isin(filtered_dff['row_id']), "opacity"] = 0.9
-                dff.loc[dff['row_id'].isin(filtered_dff['row_id']), "size"] = 20
+            # Create a unique identifier for each row to properly match
+            dff['row_id'] = dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
+            filtered_dff['row_id'] = filtered_dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
+            
+            # Use this identifier to highlight the matching rows
+            dff.loc[dff['row_id'].isin(filtered_dff['row_id']), "opacity"] = 0.9
+            dff.loc[dff['row_id'].isin(filtered_dff['row_id']), "size"] = 20
 
 
             
-                # Clean up temporary column
-                dff = dff.drop('row_id', axis=1)
+            # Clean up temporary column
+            dff = dff.drop('row_id', axis=1)
                 
             # Create the scatter plot
             fig = px.scatter(dff, x="ExperienceYears", y="Månadslön totalt",

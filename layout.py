@@ -9,16 +9,23 @@ layout = dbc.Container(fluid=True, style={"height": "100vh"}, children=[
         dbc.Col([
             html.Label("Job Title:"),
             dcc.Dropdown(id="job-dropdown", clearable=True, placeholder="Select job title")
-        ], width=4),
+        ], width=3),
         dbc.Col([
             html.Label("Department:"),
             dcc.Dropdown(id="dept-dropdown", clearable=True, placeholder="Select department")
-        ], width=4),
+        ], width=3),
+        dbc.Col([
+            dcc.Checklist(
+                id="specialist-filter",
+                value=["Specialist", "ST-fysiker", "Nej"],  # Default: All checked
+                style={"display": "flex", "flexDirection": "column"}
+            )
+        ], width=2),
         dbc.Col([
             html.Label("Years of Experience:"),
             dcc.RangeSlider(id="exp-slider", min=0, max=50, step=1, value=[0, 50],
                             marks={i: str(i) for i in range(0, 51, 5)})  # Marks every 5 years
-        ], width=4)
+        ], width=3)
     ], className="mb-4"),
 
     # Tabs for switching views
