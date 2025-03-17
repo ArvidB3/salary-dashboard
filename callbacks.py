@@ -17,8 +17,11 @@ def register_callbacks(app, df):
         dff["Job Title"] = dff["Job Title"].fillna("Not Specified")
         dff["Department"] = dff["Department"].fillna("Not Specified")
 
-        # Apply filters, but exclude the current dropdown's category
+        # Apply filters (excluding the dropdown being updated)
         filtered_dff = df.copy()
+        filtered_dff["Job Title"] = filtered_dff["Job Title"].fillna("Not Specified")
+        filtered_dff["Department"] = filtered_dff["Department"].fillna("Not Specified")
+
         if selected_dept:
             filtered_dff = filtered_dff[filtered_dff["Department"] == selected_dept]
         if exp_range:
@@ -26,7 +29,10 @@ def register_callbacks(app, df):
 
         filtered_job_counts = filtered_dff["Job Title"].value_counts().to_dict()
 
-        filtered_dff = df.copy()  # Reset before applying the job title filter
+        filtered_dff = df.copy()
+        filtered_dff["Job Title"] = filtered_dff["Job Title"].fillna("Not Specified")
+        filtered_dff["Department"] = filtered_dff["Department"].fillna("Not Specified")
+
         if selected_job:
             filtered_dff = filtered_dff[filtered_dff["Job Title"] == selected_job]
         if exp_range:
@@ -34,15 +40,20 @@ def register_callbacks(app, df):
 
         filtered_dept_counts = filtered_dff["Department"].value_counts().to_dict()
 
-        # Get all job titles and departments (without filtering them out)
+        # Get **all** unique job titles and departments
         all_jobs = sorted(df["Job Title"].fillna("Not Specified").unique())
         all_depts = sorted(df["Department"].fillna("Not Specified").unique())
 
-        # Create dropdown options with counts based on **filtered** results
+        # Ensure "Not Specified" is included in counts (even if missing)
+        filtered_job_counts["Not Specified"] = filtered_job_counts.get("Not Specified", 0)
+        filtered_dept_counts["Not Specified"] = filtered_dept_counts.get("Not Specified", 0)
+
+        # Create dropdown options with counts (show 0 if no results)
         job_options = [{"label": f"{job} ({filtered_job_counts.get(job, 0)})", "value": job} for job in all_jobs]
         dept_options = [{"label": f"{dept} ({filtered_dept_counts.get(dept, 0)})", "value": dept} for dept in all_depts]
 
         return job_options, dept_options
+
 
 
     # Update graph based on filters and active tab
