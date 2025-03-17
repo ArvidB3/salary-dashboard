@@ -1,5 +1,6 @@
 import html
 from dash import Input, Output, State, dcc, html
+import pandas as pd
 import plotly.express as px
 
 def register_callbacks(app, df):
@@ -82,6 +83,7 @@ def register_callbacks(app, df):
         # Replace NaN values
         dff["Job Title"] = dff["Job Title"].fillna("Not Specified")
         dff["Department"] = dff["Department"].fillna("Not Specified")
+        dff["Specialist eller ST-fysiker"] = dff["Specialist eller ST-fysiker"].fillna("Nej")
 
         # Apply filters
         filtered_dff = dff.copy()
@@ -91,12 +93,8 @@ def register_callbacks(app, df):
             filtered_dff = filtered_dff[filtered_dff["Department"] == selected_dept]
         if exp_range:
             filtered_dff = filtered_dff[(filtered_dff["ExperienceYears"] >= exp_range[0]) & (filtered_dff["ExperienceYears"] <= exp_range[1])]
-
-
-        # **Filter by Specialist Type**
-        dff["Specialist eller ST-fysiker"] = dff["Specialist eller ST-fysiker"].fillna("Not Specified")
-        if selected_specialists:
-            filtered_dff = filtered_dff[filtered_dff["Specialist eller ST-fysiker"].isin(selected_specialists)]
+        filtered_dff = filtered_dff[filtered_dff["Specialist eller ST-fysiker"].isin(selected_specialists)]
+        # if selected_specialists:
 
         # Generate the correct graph based on the selected tab
         if selected_tab == "histogram":
@@ -117,21 +115,19 @@ def register_callbacks(app, df):
             dff["opacity"] = 0.2
             dff["size"] = 10
             
-            # if not filtered_dff.empty:
+            if not filtered_dff.empty:
                 
-            # Create a unique identifier for each row to properly match
-            dff['row_id'] = dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
-            filtered_dff['row_id'] = filtered_dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
-            
-            # Use this identifier to highlight the matching rows
-            dff.loc[dff['row_id'].isin(filtered_dff['row_id']), "opacity"] = 0.9
-            dff.loc[dff['row_id'].isin(filtered_dff['row_id']), "size"] = 20
-
-
-            
-            # Clean up temporary column
-            dff = dff.drop('row_id', axis=1)
+                # Create a unique identifier for each row to properly match
+                dff['row_id'] = dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
+                filtered_dff['row_id'] = filtered_dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
                 
+                # Use this identifier to highlight the matching rows
+                dff.loc[dff['row_id'].isin(filtered_dff['row_id']), "opacity"] = 0.9
+                dff.loc[dff['row_id'].isin(filtered_dff['row_id']), "size"] = 20
+            
+                # Clean up temporary column
+                dff = dff.drop('row_id', axis=1)
+
             # Create the scatter plot
             fig = px.scatter(dff, x="ExperienceYears", y="Månadslön totalt",
                             title="Salary vs Experience 2",
@@ -139,6 +135,7 @@ def register_callbacks(app, df):
                             color="Job Title",
                             hover_data=["Department"],
                             size=dff["size"])
+
             # **Apply per-point opacity manually**
             for trace in fig.data:
                 job_title = trace.name  # Get the job title associated with this trace
