@@ -1,3 +1,4 @@
+import colorsys
 import html
 from dash import Input, Output, State, dcc, html
 import pandas as pd
@@ -143,13 +144,53 @@ def register_callbacks(app, df):
                 trace_opacity = dff[dff[color_by] == category_value]["opacity"].tolist()  # Get correct opacities
                 trace.marker.opacity = trace_opacity  # Assign correct per-point opacity
 
-            
-            # Remove global trendline and add a filtered one
+            # **Add general trend line for all data (black)**
             if not filtered_dff.empty:
                 trend_fig = px.scatter(filtered_dff, x="ExperienceYears", y="Månadslön totalt",
                                     trendline="ols", trendline_scope="overall",
-                                    color_discrete_sequence=["black"])  
-                fig.add_trace(trend_fig.data[1])  # Add only the trendline
+                                    color_discrete_sequence=["black"])  # General trend line in black
+                fig.add_trace(trend_fig.data[1])  # Add only the trend line
+
+            # **Generate trend lines only for filtered groups**
+            # **Get only the unique categories that are still present after filtering**
+            visible_categories = filtered_dff[color_by].unique()
+            category_color_map = {trace.name: trace.marker.color for trace in fig.data}
+            for category_value in visible_categories:
+                group_df = filtered_dff[filtered_dff[color_by] == category_value]  
+
+                if not group_df.empty:  # Ensure the group has data
+                    def darken_color(hex_color, factor=0.8):
+                        """Darkens a hex color by a given factor (default: 20% darker)."""
+                        hex_color = hex_color.lstrip('#')
+                        rgb = tuple(int(hex_color[i:i+2], 16) / 255.0 for i in (0, 2, 4))  # Convert HEX to RGB (0-1)
+                        
+                        # Convert RGB to HLS, reduce lightness
+                        h, l, s = colorsys.rgb_to_hls(*rgb)
+                        darker_rgb = colorsys.hls_to_rgb(h, max(0, l * factor), s)  # Reduce lightness
+                        
+                        # Convert back to HEX
+                        return f'#{int(darker_rgb[0] * 255):02X}{int(darker_rgb[1] * 255):02X}{int(darker_rgb[2] * 255):02X}'
+
+                    # Get original color and darken it
+                    original_color = category_color_map.get(category_value, "gray")
+                    trend_color = darken_color(original_color)
+
+                    # **Generate the "outline" as a slightly thicker black trend line**
+                    outline_trend = px.scatter(group_df, x="ExperienceYears", y="Månadslön totalt",
+                                            trendline="ols", trendline_scope="overall",
+                                            color_discrete_sequence=["white"])  # Black outline
+                    outline_trend.data[1].line.width = 6  # Make it thicker
+                    fig.add_trace(outline_trend.data[1])  # Add outline first (behind)
+
+                    # **Generate the actual colored trend line on top**
+                    group_trend = px.scatter(group_df, x="ExperienceYears", y="Månadslön totalt",
+                                            trendline="ols", trendline_scope="overall",
+                                            color_discrete_sequence=[trend_color])  # Use exact dot color
+                    group_trend.data[1].line.width = 4  # Keep it thinner
+                    fig.add_trace(group_trend.data[1])  # Add main trend line on top
+
+
+
 
         return dcc.Graph(figure=fig, style={"width": "100%", "height": "100%"})
 
