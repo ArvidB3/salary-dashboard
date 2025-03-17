@@ -1,0 +1,39 @@
+# Ignore Python compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore virtual environment
+.venv/
+venv/
+env/
+
+# Ignore environment configuration files
+.env
+*.env
+*.venv
+
+# Ignore IDE/editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore Jupyter Notebook checkpoints (if using Jupyter)
+.ipynb_checkpoints/
+
+# Ignore logs and cache
+logs/
+*.log
+*.cache
+
+# Ignore system files (Windows & macOS)
+.DS_Store
+Thumbs.db
+
+# Ignore data files that should not be tracked
+*.xlsx
+*.csv
+data/
+salary_data.csv  # Add this if you regenerate CSVs dynamically
