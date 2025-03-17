@@ -65,14 +65,21 @@ def register_callbacks(app, df):
          Input("exp-slider", "value")]
     )
     def update_graph(selected_tab, selected_job, selected_dept, exp_range):
-        # Filter data
         dff = df.copy()
+
+        # Replace NaN values
+        dff["Job Title"] = dff["Job Title"].fillna("Not Specified")
+        dff["Department"] = dff["Department"].fillna("Not Specified")
+
+        # Apply filters
+        filtered_dff = dff.copy()
         if selected_job:
-            dff = dff[dff["Job Title"] == selected_job]
+            filtered_dff = filtered_dff[filtered_dff["Job Title"] == selected_job]
         if selected_dept:
-            dff = dff[dff["Department"] == selected_dept]
+            filtered_dff = filtered_dff[filtered_dff["Department"] == selected_dept]
         if exp_range:
-            dff = dff[(dff["ExperienceYears"] >= exp_range[0]) & (dff["ExperienceYears"] <= exp_range[1])]
+            filtered_dff = filtered_dff[(filtered_dff["ExperienceYears"] >= exp_range[0]) & (filtered_dff["ExperienceYears"] <= exp_range[1])]
+
 
         # Generate the correct graph based on the selected tab
         if selected_tab == "histogram":
@@ -88,5 +95,49 @@ def register_callbacks(app, df):
                              color="Job Title",  # Different colors per Job Title
                              hover_data=["Department"],
                              trendline="ols")  # Adds trendline
+        elif selected_tab == "scatterplot2":
+            # Default: All dots are faded and small
+            dff["opacity"] = 0.2
+            dff["size"] = 10
+            print(f"Total points before filtering: {len(dff)}")
+            
+            if not filtered_dff.empty:
+                print(f"Filtered points: {len(filtered_dff)}")  # Debug check
+                
+                # Create a unique identifier for each row to properly match
+                dff['row_id'] = dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
+                filtered_dff['row_id'] = filtered_dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
+                
+                # Use this identifier to highlight the matching rows
+                dff.loc[dff['row_id'].isin(filtered_dff['row_id']), "opacity"] = 0.9
+                dff.loc[dff['row_id'].isin(filtered_dff['row_id']), "size"] = 20
+
+
+            
+                # Clean up temporary column
+                dff = dff.drop('row_id', axis=1)
+                
+            # Create the scatter plot
+            fig = px.scatter(dff, x="ExperienceYears", y="Månadslön totalt",
+                            title="Salary vs Experience 2",
+                            labels={"ExperienceYears": "Years of Experience", "Månadslön totalt": "Total Monthly Salary"},
+                            color="Job Title",
+                            hover_data=["Department"],
+                            size=dff["size"])
+            # **Apply per-point opacity manually**
+            for trace in fig.data:
+                job_title = trace.name  # Get the job title associated with this trace
+                trace_opacity = dff[dff["Job Title"] == job_title]["opacity"].tolist()  # Get correct opacities
+                trace.marker.opacity = trace_opacity  # Assign correct per-point opacity
+
+            
+            # Remove global trendline and add a filtered one
+            if not filtered_dff.empty:
+                trend_fig = px.scatter(filtered_dff, x="ExperienceYears", y="Månadslön totalt",
+                                    trendline="ols", trendline_scope="overall",
+                                    color_discrete_sequence=["black"])  
+                fig.add_trace(trend_fig.data[1])  # Add only the trendline
 
         return dcc.Graph(figure=fig, style={"width": "100%", "height": "100%"})
+
+    
