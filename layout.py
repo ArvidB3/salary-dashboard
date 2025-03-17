@@ -16,16 +16,17 @@ layout = dbc.Container(fluid=True, style={"height": "100vh"}, children=[
         ], width=4),
         dbc.Col([
             html.Label("Years of Experience:"),
-            dcc.RangeSlider(id="exp-slider")
+            dcc.RangeSlider(id="exp-slider", min=0, max=50, step=1, value=[0, 50],  # Default range
+                            marks={i: str(i) for i in range(0, 51, 5)})  # Show marks every 5 years
         ], width=4)
     ], className="mb-4"),
 
-    # Tabs for multiple views
+    # Tabs for switching views
     dcc.Tabs(id="tabs", value="histogram", children=[
         dcc.Tab(label="Salary Distribution", value="histogram"),
         dcc.Tab(label="Salary vs Experience", value="scatterplot")
     ]),
-    
-    # Default Tab Content (Must Be Initialized)
-    html.Div(id="tab-content", children=dcc.Graph(id="salary-histogram"))
+
+    # Graph container
+    html.Div(id="tab-content", style={"flex": "1", "height": "80vh"})  # Ensure the graph takes full height
 ])
