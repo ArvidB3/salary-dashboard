@@ -3,7 +3,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from layout import layout
 from callbacks import register_callbacks, update_filter_options
-import dash_core_components as dcc
+from dash import dcc
 
 # Initialize Dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])

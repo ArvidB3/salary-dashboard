@@ -10,11 +10,6 @@ def update_filter_options(_, selected_jobs, selected_depts, selected_specialists
 
     # Apply filters (excluding the dropdown being updated)
     filtered_dff = df.copy()
-
-    print("Selected Jobs:", selected_jobs)
-    print("Selected Departments:", selected_depts)
-    print("Selected Specialists:", selected_specialists)
-    print("Experience Range:", exp_range)
     filtered_dff = filtered_dff[filtered_dff["Department"].isin(selected_depts)]
     filtered_dff = filtered_dff[filtered_dff["Job Title"].isin(selected_jobs)]
     filtered_dff = filtered_dff[filtered_dff["Specialist eller ST-fysiker"].isin(selected_specialists)]
@@ -103,18 +98,13 @@ def register_callbacks(app, df):
 
         # Generate the correct graph based on the selected tab
         if selected_tab == "histogram":
-            fig = px.histogram(dff, x="Månadslön totalt", nbins=20, title="Salary Distribution",
-                               labels={"Månadslön totalt": "Total Monthly Salary"},
-                               marginal="box", opacity=0.7)
-            fig.update_layout(bargap=0.1)
-
-        elif selected_tab == "scatterplot":
-            fig = px.scatter(dff, x="ExperienceYears", y="Månadslön totalt",
-                             title="Salary vs Experience",
-                             labels={"ExperienceYears": "Years of Experience", "Månadslön totalt": "Total Monthly Salary"},
-                             color="Job Title",  # Different colors per Job Title
-                             hover_data=["Department"],
-                             trendline="ols")  # Adds trendline
+            if filtered_dff.empty:
+                fig = px.histogram(title="Salary Distribution (No Data)")
+            else:
+                fig = px.histogram(filtered_dff, x="Månadslön totalt", nbins=20, title="Salary Distribution",
+                                labels={"Månadslön totalt": "Total Monthly Salary"},
+                                marginal="box", opacity=0.7)
+                fig.update_layout(bargap=0.1)
         elif selected_tab == "scatterplot2":
             # Default: All dots are faded and small
             dff["opacity"] = 0.2
