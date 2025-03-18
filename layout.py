@@ -1,6 +1,7 @@
 import dash_bootstrap_components as dbc
 from dash import dcc, html
 
+
 layout = dbc.Container(fluid=True, style={"height": "100vh"}, children=[
     html.H1("Salary Dashboard", className="text-center my-3"),
     

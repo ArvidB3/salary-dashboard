@@ -3,6 +3,8 @@ import html
 from dash import Input, Output, State, dcc, html
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
+
 
 def update_filter_options(_, selected_jobs, selected_depts, selected_specialists, exp_range, df):
     # Make a copy of the dataset
@@ -98,6 +100,8 @@ def register_callbacks(app, df):
 
         # Generate the correct graph based on the selected tab
         if selected_tab == "histogram":
+            print("filtered_dff empty?", filtered_dff.empty)
+            print("selected_tab")
             if filtered_dff.empty:
                 fig = px.histogram(title="Salary Distribution (No Data)")
             else:
@@ -181,6 +185,28 @@ def register_callbacks(app, df):
                                             color_discrete_sequence=[trend_color])  # Use exact dot color
                     group_trend.data[1].line.width = 4  # Keep it thinner
                     fig.add_trace(group_trend.data[1])  # Add main trend line on top
+            
+            # Fix legend
+            for trace in fig.data:
+                trace.showlegend = False
+                if not "trendline" in trace.name.lower():
+                    trace.marker.opacity = dff[dff[color_by] == trace.name]["opacity"].tolist()  # Apply opacity to points
+                
+                    # Add a fully opaque dummy legend marker
+                    fig.add_trace(
+                        go.Scatter(
+                            x=[None], y=[None],  # Invisible data point
+                            mode="markers",
+                            marker=dict(size=10, color=trace.marker.color, opacity=1.0),  # Full opacity legend marker
+                            name=trace.name,  # Keep legend label
+                            showlegend=True  # Ensures it appears in the legend
+                        )
+                    )
+            fig.update_layout(
+                legend=dict(
+                    font=dict(size=16)  # Adjust size as needed
+                )
+            )
 
 
 

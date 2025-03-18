@@ -1,6 +1,7 @@
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
+import os
 from layout import layout
 from callbacks import register_callbacks, update_filter_options
 from dash import dcc
@@ -10,7 +11,13 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server  # Needed for deployment
 
 # Load data
-df = pd.read_csv("salary_data.csv")
+local_path = "salary_data.csv"
+
+if os.path.exists(local_path):
+    df = pd.read_csv(local_path)
+else:
+    print("❌ ERROR: CSV file not found in either location.")
+    df = None  # Handle the case where the dataframe is empty
 
 # Rename columns to English-friendly names
 df.rename(columns={

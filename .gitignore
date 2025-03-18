@@ -34,6 +34,6 @@ Thumbs.db
 
 # Ignore data files that should not be tracked
 *.xlsx
-*.csv
+# *.csv
 data/
 salary_data.csv  # Add this if you regenerate CSVs dynamically
