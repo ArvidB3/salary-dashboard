@@ -2,7 +2,7 @@ import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
 from layout import layout
-from callbacks import register_callbacks
+from callbacks import register_callbacks, update_filter_options
 import dash_core_components as dcc
 
 # Initialize Dash app
@@ -23,7 +23,7 @@ df.rename(columns={
 # Fill NaN values with "Not Specified"
 df["Job Title"] = df["Job Title"].fillna("Not Specified")
 df["Department"] = df["Department"].fillna("Not Specified")
-df["Specialist eller ST-fysiker"] = df["Specialist eller ST-fysiker"].fillna("Not Specified")
+df["Specialist eller ST-fysiker"] = df["Specialist eller ST-fysiker"].fillna("Nej")
 
 # Get all unique values before Dash initializes
 all_jobs = sorted(df["Job Title"].unique().tolist())
@@ -51,6 +51,16 @@ layout["specialist-filter"] = dcc.Checklist(
     value=all_specialists,  # Default: All selected
     style={"display": "flex", "flexDirection": "column"}
 )
+
+
+# **Manually trigger the callback to get initial options & values**
+initial_options = update_filter_options(None, all_jobs, all_depts, all_specialists, [0, 50], df)  # Simulate first callback call
+
+# Inject checklists into layout dynamically
+layout["job-title-filter"] = dcc.Checklist(id="job-title-filter", options=initial_options[0], value=initial_options[1])
+layout["department-filter"] = dcc.Checklist(id="department-filter", options=initial_options[2], value=initial_options[3])
+layout["specialist-filter"] = dcc.Checklist(id="specialist-filter", options=initial_options[4], value=initial_options[5])
+
 
 # Assign layout to app
 app.layout = layout

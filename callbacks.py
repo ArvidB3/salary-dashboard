@@ -4,6 +4,55 @@ from dash import Input, Output, State, dcc, html
 import pandas as pd
 import plotly.express as px
 
+def update_filter_options(_, selected_jobs, selected_depts, selected_specialists, exp_range, df):
+    # Make a copy of the dataset
+    dff = df.copy()
+
+    # Apply filters (excluding the dropdown being updated)
+    filtered_dff = df.copy()
+
+    print("Selected Jobs:", selected_jobs)
+    print("Selected Departments:", selected_depts)
+    print("Selected Specialists:", selected_specialists)
+    print("Experience Range:", exp_range)
+    filtered_dff = filtered_dff[filtered_dff["Department"].isin(selected_depts)]
+    filtered_dff = filtered_dff[filtered_dff["Job Title"].isin(selected_jobs)]
+    filtered_dff = filtered_dff[filtered_dff["Specialist eller ST-fysiker"].isin(selected_specialists)]
+    if exp_range:
+        filtered_dff = filtered_dff[
+            (filtered_dff["ExperienceYears"] >= exp_range[0]) & (filtered_dff["ExperienceYears"] <= exp_range[1])
+        ]
+
+    # Get the updated counts for each category
+    job_counts = filtered_dff["Job Title"].value_counts().to_dict()
+    dept_counts = filtered_dff["Department"].value_counts().to_dict()
+    specialist_counts = filtered_dff["Specialist eller ST-fysiker"].value_counts().to_dict()
+
+    # Get **all** unique job titles, departments, and specialists
+    all_jobs = sorted(df["Job Title"].fillna("Not Specified").unique())
+    all_depts = sorted(df["Department"].fillna("Not Specified").unique())
+    all_specialists = ["Specialist", "ST-fysiker", "Nej"]
+
+    # Ensure "Not Specified" is included in counts (even if missing)
+    job_counts["Not Specified"] = job_counts.get("Not Specified", 0)
+    dept_counts["Not Specified"] = dept_counts.get("Not Specified", 0)
+
+    # Create checklist options with counts
+    job_options = [
+        {"label": html.Span(f"{job} ({job_counts.get(job, 0)})", style={"margin-left": "8px"}), "value": job}
+        for job in all_jobs
+    ]
+    dept_options = [
+        {"label": html.Span(f"{dept} ({dept_counts.get(dept, 0)})", style={"margin-left": "8px"}), "value": dept}
+        for dept in all_depts
+    ]
+    specialist_options = [
+        {"label": html.Span(f"{spec} ({specialist_counts.get(spec, 0)})", style={"margin-left": "8px"}), "value": spec}
+        for spec in all_specialists
+    ]
+
+    return job_options, selected_jobs, dept_options, selected_depts, specialist_options, selected_specialists
+
 def register_callbacks(app, df):
     @app.callback(
         [
@@ -22,59 +71,8 @@ def register_callbacks(app, df):
         ],
         prevent_initial_call=True  # Ensures the callback does not trigger on app load
     )
-    def update_filter_options(selected_jobs, selected_depts, selected_specialists, exp_range):
-        # Make a copy of the dataset
-        dff = df.copy()
-
-        # Replace NaN values with "Not Specified"
-        dff["Job Title"] = dff["Job Title"].fillna("Not Specified")
-        dff["Department"] = dff["Department"].fillna("Not Specified")
-        dff["Specialist eller ST-fysiker"] = dff["Specialist eller ST-fysiker"].fillna("Not Specified")
-
-        # Apply filters (excluding the dropdown being updated)
-        filtered_dff = df.copy()
-
-        print("Selected Jobs:", selected_jobs)
-        print("Selected Departments:", selected_depts)
-        print("Selected Specialists:", selected_specialists)
-        print("Experience Range:", exp_range)
-        filtered_dff = filtered_dff[filtered_dff["Department"].isin(selected_depts)]
-        filtered_dff = filtered_dff[filtered_dff["Job Title"].isin(selected_jobs)]
-        filtered_dff = filtered_dff[filtered_dff["Specialist eller ST-fysiker"].isin(selected_specialists)]
-        if exp_range:
-            filtered_dff = filtered_dff[
-                (filtered_dff["ExperienceYears"] >= exp_range[0]) & (filtered_dff["ExperienceYears"] <= exp_range[1])
-            ]
-
-        # Get the updated counts for each category
-        job_counts = filtered_dff["Job Title"].value_counts().to_dict()
-        dept_counts = filtered_dff["Department"].value_counts().to_dict()
-        specialist_counts = filtered_dff["Specialist eller ST-fysiker"].value_counts().to_dict()
-
-        # Get **all** unique job titles, departments, and specialists
-        all_jobs = sorted(df["Job Title"].fillna("Not Specified").unique())
-        all_depts = sorted(df["Department"].fillna("Not Specified").unique())
-        all_specialists = ["Specialist", "ST-fysiker", "Nej"]
-
-        # Ensure "Not Specified" is included in counts (even if missing)
-        job_counts["Not Specified"] = job_counts.get("Not Specified", 0)
-        dept_counts["Not Specified"] = dept_counts.get("Not Specified", 0)
-
-        # Create checklist options with counts
-        job_options = [
-            {"label": html.Span(f"{job} ({job_counts.get(job, 0)})", style={"margin-left": "8px"}), "value": job}
-            for job in all_jobs
-        ]
-        dept_options = [
-            {"label": html.Span(f"{dept} ({dept_counts.get(dept, 0)})", style={"margin-left": "8px"}), "value": dept}
-            for dept in all_depts
-        ]
-        specialist_options = [
-            {"label": html.Span(f"{spec} ({specialist_counts.get(spec, 0)})", style={"margin-left": "8px"}), "value": spec}
-            for spec in all_specialists
-        ]
-
-        return job_options, selected_jobs, dept_options, selected_depts, specialist_options, selected_specialists
+    def callback_update_filter_options(selected_jobs, selected_depts, selected_specialists, exp_range):
+        return update_filter_options(None, selected_jobs, selected_depts, selected_specialists, exp_range, df)
 
     # Update graph based on filters and active tab
     @app.callback(
