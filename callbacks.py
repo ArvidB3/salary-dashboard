@@ -104,10 +104,8 @@ def register_callbacks(app, df):
             
         # Generate the correct graph based on the selected tab
         if selected_tab == "histogram":
-            print("filtered_dff empty?", filtered_dff.empty)
-            print("selected_tab")
             if filtered_dff.empty:
-                fig = px.histogram(title="Salary Distribution (No Data)")
+                return html.Div([html.H4("No data available for the selected filters.", style={"text-align": "center", "margin-top": "20px"})])
             else:
                 fig = px.histogram(filtered_dff, x="Månadslön totalt", nbins=20, title="Salary Distribution",
                                 labels={"Månadslön totalt": "Total Monthly Salary"},
