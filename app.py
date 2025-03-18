@@ -75,5 +75,11 @@ app.layout = layout
 # Register callbacks (pass the app and df)
 register_callbacks(app, df)
 
+
 if __name__ == "__main__":
-    app.run_server(host="0.0.0.0", port=8000)
+    IS_AZURE = "WEBSITE_HOSTNAME" in os.environ
+    app.run_server(
+        host="0.0.0.0" if IS_AZURE else "127.0.0.1", 
+        port=8000 if IS_AZURE else 8050, 
+        debug=not IS_AZURE  # Enables auto-reloading locally, but not in Azure
+    )

@@ -1,6 +1,7 @@
 import colorsys
 import html
 from dash import Input, Output, State, dcc, html
+import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -98,6 +99,9 @@ def register_callbacks(app, df):
         if exp_range:
             filtered_dff = filtered_dff[(filtered_dff["ExperienceYears"] >= exp_range[0]) & (filtered_dff["ExperienceYears"] <= exp_range[1])]
 
+
+
+            
         # Generate the correct graph based on the selected tab
         if selected_tab == "histogram":
             print("filtered_dff empty?", filtered_dff.empty)
@@ -109,6 +113,63 @@ def register_callbacks(app, df):
                                 labels={"Månadslön totalt": "Total Monthly Salary"},
                                 marginal="box", opacity=0.7)
                 fig.update_layout(bargap=0.1)
+        elif selected_tab == "statistics":
+            # Create table rows as a list
+            table_rows = [
+                html.Tr([
+                    html.Td("Number of entries", style={"text-align": "right"}),
+                    html.Td(f"{len(df)}", style={"text-align": "right"}),
+                    html.Td(f"{len(filtered_dff)}", style={"text-align": "right"})
+                ]),
+                html.Tr([
+                    html.Td("25th percentile salary", style={"text-align": "right"}),
+                    html.Td(f"{df['Månadslön totalt'].quantile(0.25):,.0f}", style={"text-align": "right"}),
+                    html.Td(f"{filtered_dff['Månadslön totalt'].quantile(0.25):,.0f}", style={"text-align": "right"})
+                ]),
+                html.Tr([
+                    html.Td("Median salary", style={"text-align": "right", "border-bottom": "2px solid black", "border-top": "2px solid black"}),
+                    html.Td(f"{df['Månadslön totalt'].median():,.0f}", style={"text-align": "right", "border-bottom": "2px solid black", "border-top": "2px solid black"}),
+                    html.Td(f"{filtered_dff['Månadslön totalt'].median():,.0f}", style={"text-align": "right", "border-bottom": "2px solid black", "border-top": "2px solid black"})
+                ]),
+                html.Tr([
+                    html.Td("Average salary", style={"text-align": "right"}),
+                    html.Td(f"{df['Månadslön totalt'].mean():,.0f}", style={"text-align": "right"}),
+                    html.Td(f"{filtered_dff['Månadslön totalt'].mean():,.0f}", style={"text-align": "right"})
+                ]),
+                html.Tr([
+                    html.Td("75th percentile salary", style={"text-align": "right"}),
+                    html.Td(f"{df['Månadslön totalt'].quantile(0.75):,.0f}", style={"text-align": "right"}),
+                    html.Td(f"{filtered_dff['Månadslön totalt'].quantile(0.75):,.0f}", style={"text-align": "right"})
+                ]),
+                html.Tr([
+                    html.Td("Average experience (years)", style={"text-align": "right"}),
+                    html.Td(f"{df['ExperienceYears'].mean():.1f}", style={"text-align": "right"}),
+                    html.Td(f"{filtered_dff['ExperienceYears'].mean():.1f}", style={"text-align": "right"})
+                ])
+            ]
+
+            # Create the table
+            stats_table = html.Div(
+                dbc.Table(
+                    [
+                        html.Thead(html.Tr([
+                            html.Th("Metric", style={"text-align": "right", "min-width": "150px", "white-space": "nowrap"}),  
+                            html.Th("Full Set", style={"text-align": "right", "min-width": "120px", "white-space": "nowrap"}),  
+                            html.Th("Filtered Set", style={"text-align": "right", "min-width": "120px", "white-space": "nowrap"})
+                        ])),
+                        html.Tbody(table_rows)
+                    ],
+                    bordered=True,
+                    striped=True,
+                    hover=True,
+                    className="mb-4",
+                    style={"width": "auto"}
+                ),
+                style={"display": "flex", "justify-content": "center", "margin-top": "40px"}
+            )
+
+
+            return stats_table
         elif selected_tab == "scatterplot2":
             # Default: All dots are faded and small
             dff["opacity"] = 0.2
@@ -129,7 +190,7 @@ def register_callbacks(app, df):
 
             # Create the scatter plot
             fig = px.scatter(dff, x="ExperienceYears", y="Månadslön totalt",
-                            title="Salary vs Experience 2",
+                            title="Salary vs Experience",
                             labels={"ExperienceYears": "Years of Experience", "Månadslön totalt": "Total Monthly Salary"},
                             color=color_by,
                             hover_data=["Department"],

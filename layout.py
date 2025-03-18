@@ -56,8 +56,9 @@ layout = dbc.Container(fluid=True, style={"height": "100vh"}, children=[
 
     # Tabs for switching views
     dcc.Tabs(id="tabs", value="scatterplot2", children=[
-        dcc.Tab(label="Salary vs Experience", value="scatterplot2"),  # New tab
+        dcc.Tab(label="Salary vs Experience", value="scatterplot2"),
         dcc.Tab(label="Salary Distribution", value="histogram"),
+        dcc.Tab(label="Statistics", value="statistics"),
     ]),
 
     # Graph container
