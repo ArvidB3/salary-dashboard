@@ -2,6 +2,16 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html
 
 
+# height and width calculation
+height = f"calc(100vh - 330px)"  # Subtract header space
+height = f"max(500px, min({height}, 2000px))"
+
+width = "100vw"
+width = f"max(800px, min({width}, 2000px))"
+
+height = f"min({height}, {width})" # height should not be larger the width
+width = f"min({width}, calc(2 * {height}))" # Width should not be larger than 2 * height
+
 layout = dbc.Container(fluid=True, style={"height": "100vh"}, children=[
     html.H1("Salary Dashboard", className="text-center my-3"),
     
@@ -62,5 +72,16 @@ layout = dbc.Container(fluid=True, style={"height": "100vh"}, children=[
     ]),
 
     # Graph container
-    html.Div(id="tab-content", style={"flex": "1", "height": "80vh"})
+    html.Div(
+        id="tab-content",
+        style={
+            "height": height,
+            "width": width,
+            "display": "flex",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "margin": "0 auto",  # Ensures centering if it's inside another container
+
+        }
+    )
 ])
