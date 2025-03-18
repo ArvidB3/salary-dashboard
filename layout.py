@@ -21,19 +21,31 @@ layout = dbc.Container(fluid=True, style={"height": "100vh"}, children=[
         ], width=2),
         dbc.Col([
             html.Label("Job Title:"),
-            dcc.Dropdown(id="job-dropdown", clearable=True, placeholder="Select job title")
-        ], width=2),
-        dbc.Col([
-            html.Label("Department:"),
-            dcc.Dropdown(id="dept-dropdown", clearable=True, placeholder="Select department")
-        ], width=2),
-        dbc.Col([
             dcc.Checklist(
-                id="specialist-filter",
-                value=["Specialist", "ST-fysiker", "Nej"],  # Default: All checked
+                id="job-title-filter",
+                options=[],  # Will be set dynamically
+                value=[],  # Default: All checked (set dynamically)
                 style={"display": "flex", "flexDirection": "column"}
             )
-        ], width=2),
+        ], width=4),
+        dbc.Col([
+            html.Label("Department:"),
+            dcc.Checklist(
+                id="department-filter",
+                options=[],  # Will be set dynamically
+                value=[],  # Default: All checked (set dynamically)
+                style={"display": "flex", "flexDirection": "column"}
+            )
+        ], width=4),
+        dbc.Col([
+            html.Label("Specialist:"),
+            dcc.Checklist(
+                id="specialist-filter",
+                options=[],  # Will be set dynamically
+                value=[],  # Default: All checked (set dynamically)
+                style={"display": "flex", "flexDirection": "column"}
+            )
+        ], width=4),
         dbc.Col([
             html.Label("Years of Experience:"),
             dcc.RangeSlider(id="exp-slider", min=0, max=50, step=1, value=[0, 50],
