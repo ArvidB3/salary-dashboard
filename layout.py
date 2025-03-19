@@ -79,7 +79,7 @@ layout = dbc.Container(fluid=True, style={"height": "100vh"}, children=[
             "width": width,
             "display": "flex",
             "justifyContent": "center",
-            "alignItems": "center",
+            "alignItems": "start",
             "margin": "0 auto",  # Ensures centering if it's inside another container
 
         }

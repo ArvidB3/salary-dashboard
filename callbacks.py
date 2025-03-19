@@ -107,7 +107,7 @@ def register_callbacks(app, df):
             if filtered_dff.empty:
                 return html.Div([html.H4("No data available for the selected filters.", style={"text-align": "center", "margin-top": "20px"})])
             else:
-                fig = px.histogram(filtered_dff, x="Månadslön totalt", nbins=20, title="Salary Distribution",
+                fig = px.histogram(filtered_dff, x="Månadslön totalt", nbins=20,
                                 labels={"Månadslön totalt": "Total Monthly Salary"},
                                 marginal="box", opacity=0.7)
                 fig.update_layout(bargap=0.1)
@@ -188,7 +188,6 @@ def register_callbacks(app, df):
 
             # Create the scatter plot
             fig = px.scatter(dff, x="ExperienceYears", y="Månadslön totalt",
-                            title="Salary vs Experience",
                             labels={"ExperienceYears": "Years of Experience", "Månadslön totalt": "Total Monthly Salary"},
                             color=color_by,
                             hover_data=["Department"],
