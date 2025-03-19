@@ -126,7 +126,7 @@ def register_callbacks(app, df):
     )
     def update_graph(selected_tab, selected_jobs, selected_depts, selected_specialists, exp_range, color_by, reset_clicks):
         # Apply filters
-        print("running update_graph\n")
+        print("running update_graph, selected tab:" + selected_tab + "\n")
         ctx = callback_context
         trigger_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
 
@@ -207,7 +207,7 @@ def register_callbacks(app, df):
             )
 
 
-            return stats_table
+            return stats_table, job_options, selected_jobs, dept_options, selected_depts, specialist_options, selected_specialists
         elif selected_tab == "scatterplot2":
             # Default: All dots are faded and small
             dff["opacity"] = 0.2
