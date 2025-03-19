@@ -5,10 +5,13 @@ import os
 from layout import layout
 from callbacks import register_callbacks, update_filter_options
 from dash import dcc
+from cache_config import cache, init_cache
+
 
 # Initialize Dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server  # Needed for deployment
+init_cache(app)
 
 # Load data
 local_path = "salary_data.csv"

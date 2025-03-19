@@ -5,13 +5,14 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from cache_config import cache
 
+@cache.memoize(timeout=300)
+def get_filtered_data(selected_jobs, selected_depts, selected_specialists, exp_range, df):
+    print("\tRunning get_filtered_data")
+    print(f"\tSelected Jobs: {selected_jobs}\n")
 
-def update_filter_options(_, selected_jobs, selected_depts, selected_specialists, exp_range, df):
-    # Make a copy of the dataset
-    dff = df.copy()
-
-    # Apply filters (excluding the dropdown being updated)
+    # Apply filters
     filtered_dff = df.copy()
     filtered_dff = filtered_dff[filtered_dff["Department"].isin(selected_depts)]
     filtered_dff = filtered_dff[filtered_dff["Job Title"].isin(selected_jobs)]
@@ -20,6 +21,25 @@ def update_filter_options(_, selected_jobs, selected_depts, selected_specialists
         filtered_dff = filtered_dff[
             (filtered_dff["ExperienceYears"] >= exp_range[0]) & (filtered_dff["ExperienceYears"] <= exp_range[1])
         ]
+
+    return filtered_dff
+
+def get_filtered_data_wrapper(selected_jobs, selected_depts, selected_specialists, exp_range, df):
+    return get_filtered_data(
+                  tuple(sorted(selected_jobs)), 
+                  tuple(sorted(selected_depts)), 
+                  tuple(sorted(selected_specialists)), 
+                  tuple(map(int, exp_range)),
+                  df)
+
+@cache.memoize(timeout=300)
+def update_filter_options(_, selected_jobs, selected_depts, selected_specialists, exp_range, df):
+    print("Running update_filter_options\n")
+
+    # Apply filters (excluding the dropdown being updated)
+    filtered_dff = get_filtered_data_wrapper(selected_jobs, selected_depts, selected_specialists, exp_range, df)
+    filtered_dff = df.copy()
+    
 
     # Get the updated counts for each category
     job_counts = filtered_dff["Job Title"].value_counts().to_dict()
@@ -52,54 +72,55 @@ def update_filter_options(_, selected_jobs, selected_depts, selected_specialists
     return job_options, selected_jobs, dept_options, selected_depts, specialist_options, selected_specialists
 
 def register_callbacks(app, df):
+#     @app.callback(
+#         [
+#             Output("job-title-filter", "options"),
+#             Output("job-title-filter", "value", allow_duplicate=True),
+#             Output("department-filter", "options"),
+#             Output("department-filter", "value", allow_duplicate=True),
+#             Output("specialist-filter", "options"),
+#             Output("specialist-filter", "value", allow_duplicate=True),
+#         ],
+#         [
+#             Input("job-title-filter", "value"),
+#             Input("department-filter", "value"),
+#             Input("specialist-filter", "value"),
+#             Input("exp-slider", "value"),
+#         ],
+#         prevent_initial_call=True  # Ensures the callback does not trigger on app load
+#     )
+#     def callback_update_filter_options(selected_jobs, selected_depts, selected_specialists, exp_range):
+#         return update_filter_options(None, selected_jobs, selected_depts, selected_specialists, exp_range, df)
+
+    # Update graph based on filters and active tab
     @app.callback(
         [
+            Output("tab-content", "children"),  # Graph
             Output("job-title-filter", "options"),
-            Output("job-title-filter", "value", allow_duplicate=True),
+            Output("job-title-filter", "value"),
             Output("department-filter", "options"),
-            Output("department-filter", "value", allow_duplicate=True),
+            Output("department-filter", "value"),
             Output("specialist-filter", "options"),
-            Output("specialist-filter", "value", allow_duplicate=True),
+            Output("specialist-filter", "value"),
         ],
         [
+            Input("tabs", "value"),
             Input("job-title-filter", "value"),
             Input("department-filter", "value"),
             Input("specialist-filter", "value"),
             Input("exp-slider", "value"),
-        ],
-        prevent_initial_call=True  # Ensures the callback does not trigger on app load
+            Input("color-by-dropdown", "value"),
+        ]
     )
-    def callback_update_filter_options(selected_jobs, selected_depts, selected_specialists, exp_range):
-        return update_filter_options(None, selected_jobs, selected_depts, selected_specialists, exp_range, df)
-
-    # Update graph based on filters and active tab
-    @app.callback(
-        Output("tab-content", "children"),
-        [Input("tabs", "value"),
-         Input("job-title-filter", "value"),
-         Input("department-filter", "value"),
-         Input("exp-slider", "value"),
-         Input("specialist-filter", "value"),
-         Input("color-by-dropdown", "value")]
-
-    )
-    def update_graph(selected_tab, selected_job, selected_dept, exp_range, selected_specialists, color_by):
-        dff = df.copy()
-
-        # Replace NaN values
-        dff["Job Title"] = dff["Job Title"].fillna("Not Specified")
-        dff["Department"] = dff["Department"].fillna("Not Specified")
-        dff["Specialist eller ST-fysiker"] = dff["Specialist eller ST-fysiker"].fillna("Nej")
-
+    def update_graph(selected_tab, selected_jobs, selected_depts, selected_specialists, exp_range, color_by):
         # Apply filters
-        filtered_dff = dff.copy()
-        filtered_dff = filtered_dff[filtered_dff["Job Title"].isin(selected_job)]
-        filtered_dff = filtered_dff[filtered_dff["Department"].isin(selected_dept)]
-        filtered_dff = filtered_dff[filtered_dff["Specialist eller ST-fysiker"].isin(selected_specialists)]
-        if exp_range:
-            filtered_dff = filtered_dff[(filtered_dff["ExperienceYears"] >= exp_range[0]) & (filtered_dff["ExperienceYears"] <= exp_range[1])]
+        print("running update_graph\n")
+        print(f"exp_range received: {exp_range}")
 
+        dff = df.copy()
+        filtered_dff = get_filtered_data_wrapper(selected_jobs, selected_depts, selected_specialists, exp_range, df)
 
+        job_options, _, dept_options, _, specialist_options, _ = update_filter_options(None, selected_jobs, selected_depts, selected_specialists, exp_range, df)
 
             
         # Generate the correct graph based on the selected tab
@@ -266,7 +287,5 @@ def register_callbacks(app, df):
                 )
             )
 
+        return dcc.Graph(figure=fig, style={"width": "100%", "height": "100%"}), job_options, selected_jobs, dept_options, selected_depts, specialist_options, selected_specialists
 
-
-
-        return dcc.Graph(figure=fig, style={"width": "100%", "height": "100%"})
