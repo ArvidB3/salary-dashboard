@@ -62,6 +62,10 @@ layout = dbc.Container(fluid=True, style={"height": "100vh"}, children=[
             dcc.RangeSlider(id="exp-slider", min=0, max=50, step=1, value=[0, 50],
                             marks={i: str(i) for i in range(0, 51, 5)})  # Marks every 5 years
         ], style={"flex": "40"}),
+        dbc.Col([
+            html.Button("Reset Filters", id="reset-filters", n_clicks=0, className="btn btn-primary")
+        ], style={"flex": "10", "display": "flex", "align-items": "center", "justify-content": "center"}),
+
     ], className="mb-4 d-flex"),
 
     # Tabs for switching views

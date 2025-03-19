@@ -4,7 +4,7 @@ import pandas as pd
 import os
 from layout import layout
 from callbacks import register_callbacks, update_filter_options
-from dash import dcc
+from dash import dcc, html
 from cache_config import cache, init_cache
 
 
@@ -62,14 +62,14 @@ layout["specialist-filter"] = dcc.Checklist(
     style={"display": "flex", "flexDirection": "column"}
 )
 
-
-# **Manually trigger the callback to get initial options & values**
-initial_options = update_filter_options(None, all_jobs, all_depts, all_specialists, [0, 50], df)  # Simulate first callback call
-
 # Inject checklists into layout dynamically
-layout["job-title-filter"] = dcc.Checklist(id="job-title-filter", options=initial_options[0], value=initial_options[1])
-layout["department-filter"] = dcc.Checklist(id="department-filter", options=initial_options[2], value=initial_options[3])
-layout["specialist-filter"] = dcc.Checklist(id="specialist-filter", options=initial_options[4], value=initial_options[5])
+layout["reset-filters"] = html.Button("Reset Filters", id="reset-filters", n_clicks=0)
+layout["job-title-filter"] = dcc.Checklist(id="job-title-filter", options=[], value=[])
+layout["department-filter"] = dcc.Checklist(id="department-filter", options=[], value=[])
+layout["specialist-filter"] = dcc.Checklist(id="specialist-filter", options=[], value=[])
+# layout["job-title-filter"] = dcc.Checklist(id="job-title-filter", options=initial_options[0], value=initial_options[1])
+# layout["department-filter"] = dcc.Checklist(id="department-filter", options=initial_options[2], value=initial_options[3])
+# layout["specialist-filter"] = dcc.Checklist(id="specialist-filter", options=initial_options[4], value=initial_options[5])
 
 
 # Assign layout to app

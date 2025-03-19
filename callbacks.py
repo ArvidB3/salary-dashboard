@@ -1,6 +1,6 @@
 import colorsys
 import html
-from dash import Input, Output, State, dcc, html
+from dash import Input, Output, State, dcc, html, callback_context
 import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.express as px
@@ -33,45 +33,56 @@ def get_filtered_data_wrapper(selected_jobs, selected_depts, selected_specialist
                   df)
 
 @cache.memoize(timeout=300)
-def update_filter_options(_, selected_jobs, selected_depts, selected_specialists, exp_range, df):
+def update_filter_options(filtered_dff, df):
     print("Running update_filter_options\n")
 
-    # Apply filters (excluding the dropdown being updated)
-    filtered_dff = get_filtered_data_wrapper(selected_jobs, selected_depts, selected_specialists, exp_range, df)
-    filtered_dff = df.copy()
-    
-
-    # Get the updated counts for each category
+    # Count occurrences in the already filtered dataframe
     job_counts = filtered_dff["Job Title"].value_counts().to_dict()
     dept_counts = filtered_dff["Department"].value_counts().to_dict()
     specialist_counts = filtered_dff["Specialist eller ST-fysiker"].value_counts().to_dict()
 
-    # Get **all** unique job titles, departments, and specialists
+    # Get all unique job titles, departments, and specialists (from full dataset)
     all_jobs = sorted(df["Job Title"].fillna("Not Specified").unique())
     all_depts = sorted(df["Department"].fillna("Not Specified").unique())
     all_specialists = ["Specialist", "ST-fysiker", "Nej"]
 
-    # Ensure "Not Specified" is included in counts (even if missing)
+    # Ensure "Not Specified" is included
     job_counts["Not Specified"] = job_counts.get("Not Specified", 0)
     dept_counts["Not Specified"] = dept_counts.get("Not Specified", 0)
 
-    # Create checklist options with counts
-    job_options = [
-        {"label": html.Span(f"{job} ({job_counts.get(job, 0)})", style={"margin-left": "8px"}), "value": job}
-        for job in all_jobs
-    ]
-    dept_options = [
-        {"label": html.Span(f"{dept} ({dept_counts.get(dept, 0)})", style={"margin-left": "8px"}), "value": dept}
-        for dept in all_depts
-    ]
-    specialist_options = [
-        {"label": html.Span(f"{spec} ({specialist_counts.get(spec, 0)})", style={"margin-left": "8px"}), "value": spec}
-        for spec in all_specialists
-    ]
+    # Create checklist options with updated counts
+    job_options = [{"label": html.Span(f"{job} ({job_counts.get(job, 0)})", style={"margin-left": "8px"}), "value": job} for job in all_jobs]
+    dept_options = [{"label": html.Span(f"{dept} ({dept_counts.get(dept, 0)})", style={"margin-left": "8px"}), "value": dept} for dept in all_depts]
+    specialist_options = [{"label": html.Span(f"{spec} ({specialist_counts.get(spec, 0)})", style={"margin-left": "8px"}), "value": spec} for spec in all_specialists]
 
-    return job_options, selected_jobs, dept_options, selected_depts, specialist_options, selected_specialists
+    return job_options, dept_options, specialist_options
 
 def register_callbacks(app, df):
+    # @app.callback(
+    #     [
+    #         Output("job-title-filter", "options"),
+    #         Output("job-title-filter", "value"),
+    #         Output("department-filter", "options"),
+    #         Output("department-filter", "value"),
+    #         Output("specialist-filter", "options"),
+    #         Output("specialist-filter", "value"),
+    #     ],
+    #     [Input("reset-filters", "n_clicks")],  # Triggers on startup + button click
+    #     prevent_initial_call=False  # Runs once on app load
+    # )
+    # def reset_filters(_):
+    #     print("Resetting filters to default values")
+
+    #     # Default filter values (full dataset)
+    #     job_options = [{"label": job, "value": job} for job in df["Job Title"].dropna().unique()]
+    #     dept_options = [{"label": dept, "value": dept} for dept in df["Department"].dropna().unique()]
+    #     specialist_options = [{"label": spec, "value": spec} for spec in ["Specialist", "ST-fysiker", "Nej"]]
+
+    #     selected_jobs = [opt["value"] for opt in job_options]  # Select all by default
+    #     selected_depts = [opt["value"] for opt in dept_options]
+    #     selected_specialists = [opt["value"] for opt in specialist_options]
+
+    #     return job_options, selected_jobs, dept_options, selected_depts, specialist_options, selected_specialists
 #     @app.callback(
 #         [
 #             Output("job-title-filter", "options"),
@@ -110,17 +121,25 @@ def register_callbacks(app, df):
             Input("specialist-filter", "value"),
             Input("exp-slider", "value"),
             Input("color-by-dropdown", "value"),
+            Input("reset-filters", "n_clicks"),
         ]
     )
-    def update_graph(selected_tab, selected_jobs, selected_depts, selected_specialists, exp_range, color_by):
+    def update_graph(selected_tab, selected_jobs, selected_depts, selected_specialists, exp_range, color_by, reset_clicks):
         # Apply filters
         print("running update_graph\n")
-        print(f"exp_range received: {exp_range}")
+        ctx = callback_context
+        trigger_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
 
+        # First Load (No trigger detected) or Reset Button Clicked
+        if not ctx.triggered or trigger_id == "reset-filters":
+            selected_jobs = df["Job Title"].dropna().unique().tolist()
+            selected_depts = df["Department"].dropna().unique().tolist()
+            selected_specialists = ["Specialist", "ST-fysiker", "Nej"]
+            
         dff = df.copy()
         filtered_dff = get_filtered_data_wrapper(selected_jobs, selected_depts, selected_specialists, exp_range, df)
 
-        job_options, _, dept_options, _, specialist_options, _ = update_filter_options(None, selected_jobs, selected_depts, selected_specialists, exp_range, df)
+        job_options, dept_options, specialist_options = update_filter_options(filtered_dff, df)
 
             
         # Generate the correct graph based on the selected tab
