@@ -213,9 +213,9 @@ def register_callbacks(app, df):
             visible_categories = filtered_dff[color_by].unique()
 
             # Create traces for filtered and unfiltered points
-            fig = go.Figure()
-
             # Loop through each category and create separate traces
+            filtered_traces = []
+            unfiltered_traces = []
             trend_traces = []
             for idx, category in enumerate(all_categories):
                 category_df = dff[dff[color_by] == category]
@@ -228,27 +228,31 @@ def register_callbacks(app, df):
                 base_color = color_variants[color_name]
 
                 # Filtered (highlighted) points
-                fig.add_trace(go.Scattergl(
+                filtered_trace = go.Scattergl(
                     x=filtered_points['ExperienceYears'],
                     y=filtered_points['Månadslön totalt'],
                     mode='markers',
                     marker=dict(size=20, color=base_color['opaque'], line=dict(width=1, color="white")),
                     name=category,
                     showlegend=categori_visible,
-                ))
+                )
+                filtered_traces.append(filtered_trace)
+                
+
                 
                 # Unfiltered (faded) points
-                fig.add_trace(go.Scattergl(
+                unfiltered_trace = go.Scattergl(
                     x=unfiltered_points['ExperienceYears'],
                     y=unfiltered_points['Månadslön totalt'],
                     mode='markers',
                     marker=dict(size=15, color=base_color['faded']),
                     name=category,
                     showlegend=not categori_visible
-                ))
+                )
+                unfiltered_traces.append(unfiltered_trace)
 
+                # Trend trace
                 group_df = filtered_dff[filtered_dff[color_by] == category]  
-
                 if not group_df.empty:  # Ensure the group has data
                     # Find the index of the category in all_categories
                     trend_color = base_color["darker"]
@@ -264,6 +268,11 @@ def register_callbacks(app, df):
                         trend_traces.append(trend_trace)
                         
 
+            fig = go.Figure()
+            for trace in unfiltered_traces:
+                fig.add_trace(trace)  # Background points first
+            for trace in filtered_traces:
+                fig.add_trace(trace)  # Highlighted points on top
 
             # **Add general trend line for all data (black)**
             if not filtered_dff.empty:
