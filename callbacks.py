@@ -176,10 +176,16 @@ def register_callbacks(app, df):
                 # Create a unique identifier for each row to properly match
                 dff['row_id'] = dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
                 filtered_dff['row_id'] = filtered_dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
+
+                # dff['row_id'] = dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
+                # filtered_dff['row_id'] = filtered_dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
                 
                 # Use this identifier to highlight the matching rows
-                dff.loc[dff['row_id'].isin(filtered_dff['row_id']), "opacity"] = 0.9
-                dff.loc[dff['row_id'].isin(filtered_dff['row_id']), "size"] = 20
+                filtered_ids = set(filtered_dff['row_id'])
+                dff.loc[dff['row_id'].isin(filtered_ids), ["opacity", "size"]] = [0.9, 20]
+                # dff.loc[dff['row_id'].isin(filtered_dff['row_id']), "opacity"] = 0.9
+                # dff.loc[dff['row_id'].isin(filtered_dff['row_id']), "size"] = 20
+
             
                 # Clean up temporary column
                 dff = dff.drop('row_id', axis=1)
@@ -229,11 +235,11 @@ def register_callbacks(app, df):
                     trend_color = darken_color(original_color)
 
                     # **Generate the "outline" as a slightly thicker black trend line**
-                    outline_trend = px.scatter(group_df, x="ExperienceYears", y="Månadslön totalt",
-                                            trendline="ols", trendline_scope="overall",
-                                            color_discrete_sequence=["white"])  # Black outline
-                    outline_trend.data[1].line.width = 6  # Make it thicker
-                    fig.add_trace(outline_trend.data[1])  # Add outline first (behind)
+                    # outline_trend = px.scatter(group_df, x="ExperienceYears", y="Månadslön totalt",
+                    #                         trendline="ols", trendline_scope="overall",
+                    #                         color_discrete_sequence=["white"])  # Black outline
+                    # outline_trend.data[1].line.width = 6  # Make it thicker
+                    # fig.add_trace(outline_trend.data[1])  # Add outline first (behind)
 
                     # **Generate the actual colored trend line on top**
                     group_trend = px.scatter(group_df, x="ExperienceYears", y="Månadslön totalt",
