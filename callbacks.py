@@ -9,6 +9,7 @@ from cache_config import cache
 import time
 import numpy as np
 import statsmodels.api as sm
+from statistics_module import compute_trendline
 
 idx_to_color = {
     0: "blue",
@@ -252,20 +253,29 @@ def register_callbacks(app, df):
                     # Find the index of the category in all_categories
                     trend_color = base_color["darker"]
 
-                    group_trend = px.scatter(group_df, x="ExperienceYears", y="Månadslön totalt",
-                                            trendline="ols", trendline_scope="overall",
-                                            color_discrete_sequence=[trend_color],
-                                            )
-                    trend_traces.append(group_trend.data[1])  # Keep it thinner
+                    trend_data = compute_trendline(group_df["ExperienceYears"], group_df["Månadslön totalt"])
+                    if trend_data:
+                        trend_x, trend_y = trend_data
+                        trend_trace = go.Scatter(
+                            x=trend_x, y=trend_y, mode="lines",
+                            line=dict(color=trend_color, width=2),
+                            showlegend=False  # Hide from legend
+                        )
+                        trend_traces.append(trend_trace)
+                        
 
-            
 
             # **Add general trend line for all data (black)**
             if not filtered_dff.empty:
-                trend_fig = px.scatter(filtered_dff, x="ExperienceYears", y="Månadslön totalt",
-                                    trendline="ols", trendline_scope="overall",
-                                    color_discrete_sequence=["black"])  # General trend line in black
-                fig.add_trace(trend_fig.data[1])  # Add only the trend line
+                trend_data = compute_trendline(filtered_dff["ExperienceYears"], filtered_dff["Månadslön totalt"])
+                if trend_data:
+                    trend_x, trend_y = trend_data
+                    fig.add_trace(go.Scatter(
+                        x=trend_x, y=trend_y, mode="lines",
+                        line=dict(color="black", width=2),
+                        name="Trend line",
+                        showlegend=True
+                    ))
 
             for trend_trace in trend_traces:
                 trend_trace.showlegend = False  # Hide from legend
