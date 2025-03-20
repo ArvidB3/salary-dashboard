@@ -1,6 +1,6 @@
 from flask_caching import Cache
 
-cache = Cache(config={"CACHE_TYPE": "simple"})  # Initialize cache without app
+cache = Cache(config={"CACHE_TYPE": "filesystem", "CACHE_DIR": "/tmp"})
 
 def init_cache(app):
     """Attach cache to Dash app"""
