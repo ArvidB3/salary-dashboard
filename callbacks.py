@@ -7,6 +7,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from cache_config import cache
 import time
+import numpy as np
+import statsmodels.api as sm
 
 idx_to_color = {
     0: "blue",
@@ -15,12 +17,22 @@ idx_to_color = {
     3: "purple",
     4: "orange"
 }
+# color_variants = {
+#     'blue': {'opaque': 'rgba(31, 119, 180, 1.0)', 'faded': 'rgba(31, 119, 180, 0.2)', 'darker': 'rgba(24, 95, 144, 1.0)'},
+#     'red': {'opaque': 'rgba(214, 39, 40, 1.0)', 'faded': 'rgba(214, 39, 40, 0.2)', 'darker': 'rgba(171, 31, 31, 1.0)'},
+#     'green': {'opaque': 'rgba(44, 160, 44, 1.0)', 'faded': 'rgba(44, 160, 44, 0.2)', 'darker': 'rgba(35, 128, 35, 1.0)'},
+#     'purple': {'opaque': 'rgba(148, 103, 189, 1.0)', 'faded': 'rgba(148, 103, 189, 0.2)', 'darker': 'rgba(118, 70, 162, 1.0)'},
+#     'orange': {'opaque': 'rgba(255, 127, 14, 1.0)', 'faded': 'rgba(255, 127, 14, 0.2)', 'darker': 'rgba(215, 100, 0, 1.0)'}
+#     'cyan': 
+# }
+
 color_variants = {
-    'blue': {'opaque': 'rgba(31, 119, 180, 1.0)', 'faded': 'rgba(31, 119, 180, 0.2)', 'darker': 'rgba(24, 95, 144, 1.0)'},
-    'red': {'opaque': 'rgba(214, 39, 40, 1.0)', 'faded': 'rgba(214, 39, 40, 0.2)', 'darker': 'rgba(171, 31, 31, 1.0)'},
-    'green': {'opaque': 'rgba(44, 160, 44, 1.0)', 'faded': 'rgba(44, 160, 44, 0.2)', 'darker': 'rgba(35, 128, 35, 1.0)'},
-    'purple': {'opaque': 'rgba(148, 103, 189, 1.0)', 'faded': 'rgba(148, 103, 189, 0.2)', 'darker': 'rgba(118, 70, 162, 1.0)'},
-    'orange': {'opaque': 'rgba(255, 127, 14, 1.0)', 'faded': 'rgba(255, 127, 14, 0.2)', 'darker': 'rgba(215, 100, 0, 1.0)'}
+    'blue': {'opaque': 'rgba(99, 110, 250, 1.0)', 'faded': 'rgba(99, 110, 250, 0.2)', 'darker': 'rgba(79, 88, 200, 1.0)'},
+    'red': {'opaque': 'rgba(239, 85, 56, 1.0)', 'faded': 'rgba(239, 85, 56, 0.2)', 'darker': 'rgba(191, 68, 45, 1.0)'},
+    'green': {'opaque': 'rgba(0, 204, 150, 1.0)', 'faded': 'rgba(0, 204, 150, 0.2)', 'darker': 'rgba(0, 163, 120, 1.0)'},
+    'purple': {'opaque': 'rgba(171, 99, 250, 1.0)', 'faded': 'rgba(171, 99, 250, 0.2)', 'darker': 'rgba(137, 79, 200, 1.0)'},
+    'orange': {'opaque': 'rgba(255, 161, 90, 1.0)', 'faded': 'rgba(255, 161, 90, 0.2)', 'darker': 'rgba(204, 129, 72, 1.0)'},
+    'cyan': {'opaque': 'rgba(25, 211, 243, 1.0)', 'faded': 'rgba(25, 211, 243, 0.2)', 'darker': 'rgba(20, 169, 195, 1.0)'}
 }
 
 
@@ -183,36 +195,70 @@ def register_callbacks(app, df):
 
             return stats_table, job_options, selected_jobs, dept_options, selected_depts, specialist_options, selected_specialists
         elif selected_tab == "scatterplot2":
-            # Default: All dots are faded and small
-            dff["opacity"] = 0.2
-            dff["size"] = 10
             
-            if not filtered_dff.empty:
+            # Unique row identifier for filtering
+            dff['row_id'] = dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
+            filtered_dff['row_id'] = filtered_dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
+
+            # Determine which rows are in the filtered DataFrame
+            dff['is_filtered'] = dff['row_id'].isin(filtered_dff['row_id'])
+
+            # Split data into two groups
+            filtered_points = dff[dff['is_filtered']]
+            unfiltered_points = dff[~dff['is_filtered']]
+            
+            all_categories = dff[color_by].unique()
+            visible_categories = filtered_dff[color_by].unique()
+            category_to_color = {category: idx_to_color[idx] for idx, category in enumerate(all_categories)}
+
+            # Create traces for filtered and unfiltered points
+            fig = go.Figure()
+
+            # Loop through each category and create separate traces
+            trend_traces = []
+            for idx, category in enumerate(all_categories):
+                category_df = dff[dff[color_by] == category]
+                filtered_points = category_df[category_df['is_filtered']]
+                unfiltered_points = category_df[~category_df['is_filtered']]
+                categori_visible = category in visible_categories
+
+                # Get color based on index, cycle if more than 5 categories
+                color_name = idx_to_color[idx % len(idx_to_color)]
+                base_color = color_variants[color_name]
+
+                # Filtered (highlighted) points
+                fig.add_trace(go.Scatter(
+                    x=filtered_points['ExperienceYears'],
+                    y=filtered_points['Månadslön totalt'],
+                    mode='markers',
+                    marker=dict(size=20, color=base_color['opaque'], line=dict(width=1, color="white")),
+                    name=category,
+                    showlegend=categori_visible,
+                ))
                 
-                # Create a unique identifier for each row to properly match
-                # dff['row_id'] = dff.astype(str).agg('_'.join, axis=1)
-                dff['row_id'] = dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
-                filtered_dff['row_id'] = filtered_dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
+                # Unfiltered (faded) points
+                fig.add_trace(go.Scatter(
+                    x=unfiltered_points['ExperienceYears'],
+                    y=unfiltered_points['Månadslön totalt'],
+                    mode='markers',
+                    marker=dict(size=15, color=base_color['faded']),
+                    name=category,
+                    showlegend=not categori_visible
+                ))
 
-                # Use this identifier to highlight the matching rows
-                filtered_ids = set(filtered_dff['row_id'])
-                dff.loc[dff['row_id'].isin(filtered_ids), ["opacity", "size"]] = [0.9, 20]
+                group_df = filtered_dff[filtered_dff[color_by] == category]  
+
+                if not group_df.empty:  # Ensure the group has data
+                    # Find the index of the category in all_categories
+                    trend_color = base_color["darker"]
+
+                    group_trend = px.scatter(group_df, x="ExperienceYears", y="Månadslön totalt",
+                                            trendline="ols", trendline_scope="overall",
+                                            color_discrete_sequence=[trend_color],
+                                            )
+                    trend_traces.append(group_trend.data[1])  # Keep it thinner
+
             
-                # Clean up temporary column
-                dff = dff.drop('row_id', axis=1)
-
-            # Create the scatter plot
-            fig = px.scatter(dff, x="ExperienceYears", y="Månadslön totalt",
-                            labels={"ExperienceYears": "Years of Experience", "Månadslön totalt": "Total Monthly Salary"},
-                            color=color_by,
-                            hover_data=["Department"],
-                            size=dff["size"])
-
-            # **Apply per-point opacity manually**
-            for trace in fig.data:
-                category_value = trace.name  # Get the job title associated with this trace
-                trace_opacity = dff[dff[color_by] == category_value]["opacity"].tolist()  # Get correct opacities
-                trace.marker.opacity = trace_opacity  # Assign correct per-point opacity
 
             # **Add general trend line for all data (black)**
             if not filtered_dff.empty:
@@ -221,44 +267,10 @@ def register_callbacks(app, df):
                                     color_discrete_sequence=["black"])  # General trend line in black
                 fig.add_trace(trend_fig.data[1])  # Add only the trend line
 
-            # **Generate trend lines only for filtered groups**
-            # **Get only the unique categories that are still present after filtering**
+            for trend_trace in trend_traces:
+                trend_trace.showlegend = False  # Hide from legend
+                fig.add_trace(trend_trace)
 
-            all_categories = dff[color_by].unique()
-            visible_categories = filtered_dff[color_by].unique()
-
-            for category_value in visible_categories:
-                group_df = filtered_dff[filtered_dff[color_by] == category_value]  
-
-                if not group_df.empty:  # Ensure the group has data
-                    # Find the index of the category_value in all_categories
-                    category_idx = list(all_categories).index(category_value)
-                    trend_color_name = idx_to_color[category_idx]
-                    trend_color = color_variants[trend_color_name]["darker"]
-
-                    # **Generate the actual colored trend line on top**
-                    group_trend = px.scatter(group_df, x="ExperienceYears", y="Månadslön totalt",
-                                            trendline="ols", trendline_scope="overall",
-                                            color_discrete_sequence=[trend_color])
-                    group_trend.data[1].line.width = 4  # Keep it thinner
-                    fig.add_trace(group_trend.data[1])  # Add main trend line on top
-            
-            # Fix legend
-            for trace in fig.data:
-                trace.showlegend = False
-                if not "trendline" in trace.name.lower():
-                    trace.marker.opacity = dff[dff[color_by] == trace.name]["opacity"].tolist()  # Apply opacity to points
-                
-                    # Add a fully opaque dummy legend marker
-                    fig.add_trace(
-                        go.Scatter(
-                            x=[None], y=[None],  # Invisible data point
-                            mode="markers",
-                            marker=dict(size=10, color=trace.marker.color, opacity=1.0),  # Full opacity legend marker
-                            name=trace.name,  # Keep legend label
-                            showlegend=True  # Ensures it appears in the legend
-                        )
-                    )
             fig.update_layout(
                 legend=dict(
                     font=dict(size=16)  # Adjust size as needed
@@ -279,6 +291,8 @@ def register_callbacks(app, df):
         print(f"Timing Info: {debug_info}")  # Logs to backend console
 
 
+        # return dcc.Graph(figure=fig, style={"width": "100%", "height": "100%"}), job_options, selected_jobs, dept_options, selected_depts, specialist_options, selected_specialists
+    
         return (
             html.Div([
                 dcc.Graph(figure=fig, style={"width": "100%", "height": "100%"}),
