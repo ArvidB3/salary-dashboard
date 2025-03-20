@@ -228,7 +228,7 @@ def register_callbacks(app, df):
                 base_color = color_variants[color_name]
 
                 # Filtered (highlighted) points
-                fig.add_trace(go.Scatter(
+                fig.add_trace(go.Scattergl(
                     x=filtered_points['ExperienceYears'],
                     y=filtered_points['Månadslön totalt'],
                     mode='markers',
@@ -238,7 +238,7 @@ def register_callbacks(app, df):
                 ))
                 
                 # Unfiltered (faded) points
-                fig.add_trace(go.Scatter(
+                fig.add_trace(go.Scattergl(
                     x=unfiltered_points['ExperienceYears'],
                     y=unfiltered_points['Månadslön totalt'],
                     mode='markers',
@@ -256,7 +256,7 @@ def register_callbacks(app, df):
                     trend_data = compute_trendline(group_df["ExperienceYears"], group_df["Månadslön totalt"])
                     if trend_data:
                         trend_x, trend_y = trend_data
-                        trend_trace = go.Scatter(
+                        trend_trace = go.Scattergl(
                             x=trend_x, y=trend_y, mode="lines",
                             line=dict(color=trend_color, width=2),
                             showlegend=False  # Hide from legend
@@ -270,7 +270,7 @@ def register_callbacks(app, df):
                 trend_data = compute_trendline(filtered_dff["ExperienceYears"], filtered_dff["Månadslön totalt"])
                 if trend_data:
                     trend_x, trend_y = trend_data
-                    fig.add_trace(go.Scatter(
+                    fig.add_trace(go.Scattergl(
                         x=trend_x, y=trend_y, mode="lines",
                         line=dict(color="black", width=2),
                         name="Trend line",
@@ -301,12 +301,12 @@ def register_callbacks(app, df):
         print(f"Timing Info: {debug_info}")  # Logs to backend console
 
 
-        # return dcc.Graph(figure=fig, style={"width": "100%", "height": "100%"}), job_options, selected_jobs, dept_options, selected_depts, specialist_options, selected_specialists
+        return dcc.Graph(figure=fig, style={"width": "100%", "height": "100%"}), job_options, selected_jobs, dept_options, selected_depts, specialist_options, selected_specialists
     
-        return (
-            html.Div([
-                dcc.Graph(figure=fig, style={"width": "100%", "height": "100%"}),
-                html.P(debug_info, style={"margin-top": "10px", "font-size": "14px", "color": "gray"})
-            ])
-        ), job_options, selected_jobs, dept_options, selected_depts, specialist_options, selected_specialists
+        # return (
+        #     html.Div([
+        #         dcc.Graph(figure=fig, style={"width": "100%", "height": "100%"}),
+        #         html.P(debug_info, style={"margin-top": "10px", "font-size": "14px", "color": "gray"})
+        #     ])
+        # ), job_options, selected_jobs, dept_options, selected_depts, specialist_options, selected_specialists
 
