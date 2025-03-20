@@ -8,6 +8,22 @@ import plotly.graph_objects as go
 from cache_config import cache
 import time
 
+idx_to_color = {
+    0: "blue",
+    1: "red",
+    2: "green",
+    3: "purple",
+    4: "orange"
+}
+color_variants = {
+    'blue': {'opaque': 'rgba(31, 119, 180, 1.0)', 'faded': 'rgba(31, 119, 180, 0.2)', 'darker': 'rgba(24, 95, 144, 1.0)'},
+    'red': {'opaque': 'rgba(214, 39, 40, 1.0)', 'faded': 'rgba(214, 39, 40, 0.2)', 'darker': 'rgba(171, 31, 31, 1.0)'},
+    'green': {'opaque': 'rgba(44, 160, 44, 1.0)', 'faded': 'rgba(44, 160, 44, 0.2)', 'darker': 'rgba(35, 128, 35, 1.0)'},
+    'purple': {'opaque': 'rgba(148, 103, 189, 1.0)', 'faded': 'rgba(148, 103, 189, 0.2)', 'darker': 'rgba(118, 70, 162, 1.0)'},
+    'orange': {'opaque': 'rgba(255, 127, 14, 1.0)', 'faded': 'rgba(255, 127, 14, 0.2)', 'darker': 'rgba(215, 100, 0, 1.0)'}
+}
+
+
 @cache.memoize(timeout=300)
 def get_filtered_data(selected_jobs, selected_depts, selected_specialists, exp_range, df):
     print("\tRunning get_filtered_data")
@@ -174,18 +190,13 @@ def register_callbacks(app, df):
             if not filtered_dff.empty:
                 
                 # Create a unique identifier for each row to properly match
+                # dff['row_id'] = dff.astype(str).agg('_'.join, axis=1)
                 dff['row_id'] = dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
                 filtered_dff['row_id'] = filtered_dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
 
-                # dff['row_id'] = dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
-                # filtered_dff['row_id'] = filtered_dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
-                
                 # Use this identifier to highlight the matching rows
                 filtered_ids = set(filtered_dff['row_id'])
                 dff.loc[dff['row_id'].isin(filtered_ids), ["opacity", "size"]] = [0.9, 20]
-                # dff.loc[dff['row_id'].isin(filtered_dff['row_id']), "opacity"] = 0.9
-                # dff.loc[dff['row_id'].isin(filtered_dff['row_id']), "size"] = 20
-
             
                 # Clean up temporary column
                 dff = dff.drop('row_id', axis=1)
@@ -212,39 +223,23 @@ def register_callbacks(app, df):
 
             # **Generate trend lines only for filtered groups**
             # **Get only the unique categories that are still present after filtering**
+
+            all_categories = dff[color_by].unique()
             visible_categories = filtered_dff[color_by].unique()
-            category_color_map = {trace.name: trace.marker.color for trace in fig.data}
+
             for category_value in visible_categories:
                 group_df = filtered_dff[filtered_dff[color_by] == category_value]  
 
                 if not group_df.empty:  # Ensure the group has data
-                    def darken_color(hex_color, factor=0.8):
-                        """Darkens a hex color by a given factor (default: 20% darker)."""
-                        hex_color = hex_color.lstrip('#')
-                        rgb = tuple(int(hex_color[i:i+2], 16) / 255.0 for i in (0, 2, 4))  # Convert HEX to RGB (0-1)
-                        
-                        # Convert RGB to HLS, reduce lightness
-                        h, l, s = colorsys.rgb_to_hls(*rgb)
-                        darker_rgb = colorsys.hls_to_rgb(h, max(0, l * factor), s)  # Reduce lightness
-                        
-                        # Convert back to HEX
-                        return f'#{int(darker_rgb[0] * 255):02X}{int(darker_rgb[1] * 255):02X}{int(darker_rgb[2] * 255):02X}'
-
-                    # Get original color and darken it
-                    original_color = category_color_map.get(category_value, "gray")
-                    trend_color = darken_color(original_color)
-
-                    # **Generate the "outline" as a slightly thicker black trend line**
-                    # outline_trend = px.scatter(group_df, x="ExperienceYears", y="Månadslön totalt",
-                    #                         trendline="ols", trendline_scope="overall",
-                    #                         color_discrete_sequence=["white"])  # Black outline
-                    # outline_trend.data[1].line.width = 6  # Make it thicker
-                    # fig.add_trace(outline_trend.data[1])  # Add outline first (behind)
+                    # Find the index of the category_value in all_categories
+                    category_idx = list(all_categories).index(category_value)
+                    trend_color_name = idx_to_color[category_idx]
+                    trend_color = color_variants[trend_color_name]["darker"]
 
                     # **Generate the actual colored trend line on top**
                     group_trend = px.scatter(group_df, x="ExperienceYears", y="Månadslön totalt",
                                             trendline="ols", trendline_scope="overall",
-                                            color_discrete_sequence=[trend_color])  # Use exact dot color
+                                            color_discrete_sequence=[trend_color])
                     group_trend.data[1].line.width = 4  # Keep it thinner
                     fig.add_trace(group_trend.data[1])  # Add main trend line on top
             
