@@ -6,6 +6,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from cache_config import cache
+import time
 
 @cache.memoize(timeout=300)
 def get_filtered_data(selected_jobs, selected_depts, selected_specialists, exp_range, df):
@@ -58,51 +59,6 @@ def update_filter_options(filtered_dff, df):
     return job_options, dept_options, specialist_options
 
 def register_callbacks(app, df):
-    # @app.callback(
-    #     [
-    #         Output("job-title-filter", "options"),
-    #         Output("job-title-filter", "value"),
-    #         Output("department-filter", "options"),
-    #         Output("department-filter", "value"),
-    #         Output("specialist-filter", "options"),
-    #         Output("specialist-filter", "value"),
-    #     ],
-    #     [Input("reset-filters", "n_clicks")],  # Triggers on startup + button click
-    #     prevent_initial_call=False  # Runs once on app load
-    # )
-    # def reset_filters(_):
-    #     print("Resetting filters to default values")
-
-    #     # Default filter values (full dataset)
-    #     job_options = [{"label": job, "value": job} for job in df["Job Title"].dropna().unique()]
-    #     dept_options = [{"label": dept, "value": dept} for dept in df["Department"].dropna().unique()]
-    #     specialist_options = [{"label": spec, "value": spec} for spec in ["Specialist", "ST-fysiker", "Nej"]]
-
-    #     selected_jobs = [opt["value"] for opt in job_options]  # Select all by default
-    #     selected_depts = [opt["value"] for opt in dept_options]
-    #     selected_specialists = [opt["value"] for opt in specialist_options]
-
-    #     return job_options, selected_jobs, dept_options, selected_depts, specialist_options, selected_specialists
-#     @app.callback(
-#         [
-#             Output("job-title-filter", "options"),
-#             Output("job-title-filter", "value", allow_duplicate=True),
-#             Output("department-filter", "options"),
-#             Output("department-filter", "value", allow_duplicate=True),
-#             Output("specialist-filter", "options"),
-#             Output("specialist-filter", "value", allow_duplicate=True),
-#         ],
-#         [
-#             Input("job-title-filter", "value"),
-#             Input("department-filter", "value"),
-#             Input("specialist-filter", "value"),
-#             Input("exp-slider", "value"),
-#         ],
-#         prevent_initial_call=True  # Ensures the callback does not trigger on app load
-#     )
-#     def callback_update_filter_options(selected_jobs, selected_depts, selected_specialists, exp_range):
-#         return update_filter_options(None, selected_jobs, selected_depts, selected_specialists, exp_range, df)
-
     # Update graph based on filters and active tab
     @app.callback(
         [
@@ -126,7 +82,8 @@ def register_callbacks(app, df):
     )
     def update_graph(selected_tab, selected_jobs, selected_depts, selected_specialists, exp_range, color_by, reset_clicks):
         # Apply filters
-        print("running update_graph, selected tab:" + selected_tab + "\n")
+        start_time = time.time()  # Start measuring time
+
         ctx = callback_context
         trigger_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
 
@@ -141,6 +98,7 @@ def register_callbacks(app, df):
 
         job_options, dept_options, specialist_options = update_filter_options(filtered_dff, df)
 
+        filtering_done_time = time.time()
             
         # Generate the correct graph based on the selected tab
         if selected_tab == "histogram":
@@ -306,5 +264,24 @@ def register_callbacks(app, df):
                 )
             )
 
-        return dcc.Graph(figure=fig, style={"width": "100%", "height": "100%"}), job_options, selected_jobs, dept_options, selected_depts, specialist_options, selected_specialists
+        all_done_time = time.time()
+        filtering_done = round(filtering_done_time - start_time, 4)  # Measure execution time
+        graph_time = round(all_done_time - filtering_done_time, 4)  # Measure execution time
+        everything_done = filtering_done + graph_time
+
+        debug_info = (
+            f"Time to Filter: {filtering_done}s | "
+            f"Time to Generate Graph: {graph_time}s | "
+            f"Total Time: {everything_done}s"
+        )
+
+        print(f"Timing Info: {debug_info}")  # Logs to backend console
+
+
+        return (
+            html.Div([
+                dcc.Graph(figure=fig, style={"width": "100%", "height": "100%"}),
+                html.P(debug_info, style={"margin-top": "10px", "font-size": "14px", "color": "gray"})
+            ])
+        ), job_options, selected_jobs, dept_options, selected_depts, specialist_options, selected_specialists
 
