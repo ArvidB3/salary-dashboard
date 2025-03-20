@@ -197,11 +197,12 @@ def register_callbacks(app, df):
         elif selected_tab == "scatterplot2":
             
             # Unique row identifier for filtering
-            dff['row_id'] = dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
-            filtered_dff['row_id'] = filtered_dff.apply(lambda row: f"{row['Job Title']}_{row['Department']}_{row['ExperienceYears']}_{row['Månadslön totalt']}", axis=1)
+            dff['row_id'] = dff[['Job Title', 'Department', 'ExperienceYears', 'Månadslön totalt']].astype(str).agg('_'.join, axis=1)
+            filtered_dff['row_id'] = filtered_dff[['Job Title', 'Department', 'ExperienceYears', 'Månadslön totalt']].astype(str).agg('_'.join, axis=1)
 
             # Determine which rows are in the filtered DataFrame
-            dff['is_filtered'] = dff['row_id'].isin(filtered_dff['row_id'])
+            filtered_set = set(filtered_dff['row_id'])  # Convert to set for faster lookup
+            dff['is_filtered'] = dff['row_id'].apply(lambda x: x in filtered_set)
 
             # Split data into two groups
             filtered_points = dff[dff['is_filtered']]
@@ -209,7 +210,6 @@ def register_callbacks(app, df):
             
             all_categories = dff[color_by].unique()
             visible_categories = filtered_dff[color_by].unique()
-            category_to_color = {category: idx_to_color[idx] for idx, category in enumerate(all_categories)}
 
             # Create traces for filtered and unfiltered points
             fig = go.Figure()
