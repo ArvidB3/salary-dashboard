@@ -221,7 +221,7 @@ def register_callbacks(app, df):
                 category_df = dff[dff[color_by] == category]
                 filtered_points = category_df[category_df['is_filtered']]
                 unfiltered_points = category_df[~category_df['is_filtered']]
-                categori_visible = category in visible_categories
+                category_visible = category in visible_categories
 
                 # Get color based on index, cycle if more than 5 categories
                 color_name = idx_to_color[idx % len(idx_to_color)]
@@ -234,7 +234,8 @@ def register_callbacks(app, df):
                     mode='markers',
                     marker=dict(size=20, color=base_color['opaque'], line=dict(width=1, color="white")),
                     name=category,
-                    showlegend=categori_visible,
+                    showlegend=category_visible,
+                    hoverinfo="skip",
                 )
                 filtered_traces.append(filtered_trace)
                 
@@ -247,7 +248,8 @@ def register_callbacks(app, df):
                     mode='markers',
                     marker=dict(size=15, color=base_color['faded']),
                     name=category,
-                    showlegend=not categori_visible
+                    showlegend=not category_visible,
+                    hoverinfo="skip"
                 )
                 unfiltered_traces.append(unfiltered_trace)
 
@@ -263,7 +265,8 @@ def register_callbacks(app, df):
                         trend_trace = go.Scattergl(
                             x=trend_x, y=trend_y, mode="lines",
                             line=dict(color=trend_color, width=2),
-                            showlegend=False  # Hide from legend
+                            showlegend=False,
+                            hoverinfo="skip"  # Hide from legend
                         )
                         trend_traces.append(trend_trace)
                         
@@ -283,7 +286,8 @@ def register_callbacks(app, df):
                         x=trend_x, y=trend_y, mode="lines",
                         line=dict(color="black", width=2),
                         name="Trend line",
-                        showlegend=True
+                        showlegend=True,
+                        hoverinfo="skip"
                     ))
 
             for trend_trace in trend_traces:
@@ -291,6 +295,9 @@ def register_callbacks(app, df):
                 fig.add_trace(trend_trace)
 
             fig.update_layout(
+                xaxis_title="Experience (years)",
+                yaxis_title="Monthly Salary",
+                # hovermode="closest"
                 legend=dict(
                     font=dict(size=16)  # Adjust size as needed
                 )
